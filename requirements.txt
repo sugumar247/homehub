@@ -160,7 +160,7 @@ streamlit==1.25.0
 tenacity==8.2.2
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
-tensorflow==2.11.0
+tensorflow==2.19.0
 termcolor==2.2.0
 threadpoolctl==3.2.0
 toml==0.10.2
