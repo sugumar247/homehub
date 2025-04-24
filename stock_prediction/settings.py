@@ -26,9 +26,11 @@ SECRET_KEY = 'django-insecure-a8p+a1svq-7ms$_sft=sjtqwr%553xqu%miw7u%=0+2c$1vq6j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS =["*"]
+ALLOWED_HOSTS =["homehub-4bfb.onrender.com", "console.firebase.google.com"]
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://homehub-4bfb.onrender.com',
+]
 # Application definition
 
 INSTALLED_APPS = [
