@@ -29,12 +29,14 @@ from .firebase import db
 from django.conf import settings
 import base64
 
-
-# Enable memory growth for GPUs (optional, if you're using a GPU)
-gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-if gpu_devices:
-    tf.config.experimental.set_memory_growth(gpu_devices[0], True)
-
+try:
+    # Enable memory growth for GPUs (optional, if you're using a GPU)
+    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+    if gpu_devices:
+        tf.config.experimental.set_memory_growth(gpu_devices[0], True)
+except Exception as e:
+    print("GPU setup skipped:", e)
+    
 try:
     docs = db.collection('sales_data').stream()
     data = [doc.to_dict() for doc in docs]
