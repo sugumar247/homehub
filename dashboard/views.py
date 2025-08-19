@@ -16,13 +16,8 @@ from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from sklearn.metrics import r2_score
 import os
-# import io
 from google.oauth2 import service_account
-# from googleapiclient.discovery import build
-# from googleapiclient.http import MediaIoBaseUpload
 from django.conf import settings
-# from django.core.files.storage import default_storage
-# from django.http import HttpResponse
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .firebase import db
@@ -30,7 +25,6 @@ from django.conf import settings
 import base64
 
 try:
-    # Enable memory growth for GPUs (optional, if you're using a GPU)
     gpu_devices = tf.config.experimental.list_physical_devices('GPU')
     if gpu_devices:
         tf.config.experimental.set_memory_growth(gpu_devices[0], True)
@@ -43,7 +37,7 @@ try:
     df = pd.DataFrame(data)
 except Exception as e:
     print(f"Error loading Firestore data: {e}")
-    # df = pd.DataFrame()  # fallback
+  
 
 # Function to prepare data for LSTM
 def prepare_data(series, look_back=7):
@@ -135,17 +129,11 @@ def predict_stock(request):
             # Get the predictions from the session 
             predictions = request.session.get('predictions', {})
 
-            # **Update Firebase: Only when Add Stock button is clicked**
             for product, prediction in predictions.items():
-                # Get the product document by ProductName
                 query = db.collection('products').where('product_name', '==', product).get()
 
                 if query:
-                    # There should be only one document for each ProductName
                     product_doc = query[0]
-                    # db.collection('products').document(product_doc.id).update({
-                    #     'current_stock_level': prediction
-                    # })
                     try:
                         db.collection('products').document(product_doc.id).update({
                             'current_stock_level': prediction
@@ -155,20 +143,16 @@ def predict_stock(request):
                         print(f"Error updating stock level for {product}: {e}")
 
             messages.success(request, "Stocks updated")
-            # Redirect to avoid resubmission on page refresh
             return redirect('stock_prediction')
 
-        # Check if a prediction button is clicked (Day, Week, or Month)
         prediction_type = request.POST.get('prediction_type', '').strip().lower()
 
         sales_column = 'sales_last_week'
         if prediction_type == 'week':
-            print("📊sales column: " , sales_column)
             sales_column = 'sales_last_week'
             look_back = 7
             next_days = 7
         elif prediction_type == 'month':
-            print("📊sales column: " , sales_column)
             sales_column = 'sales_last_month'
             look_back = 30
             next_days = 30
@@ -177,7 +161,6 @@ def predict_stock(request):
             look_back = 7
             next_days = 1
 
-        # Get unique products
         products = df['product_name'].unique()
 
         # Iterate over each product and predict stock needed
@@ -198,7 +181,6 @@ def predict_stock(request):
                     true_all.append(product_data[-1])
                     pred_all.append(average_prediction)
                 else:
-                    # predictions[product] = round(train_predict_lstm(product_data, look_back=adjusted_look_back, next_days=next_days))
                     pred_value = train_predict_lstm(product_data, look_back=adjusted_look_back, next_days=next_days)
                     predictions[product] = round(pred_value)
 
@@ -208,7 +190,6 @@ def predict_stock(request):
             else:
                 predictions[product] = round(np.mean(df[sales_column].values))
 
-          # ✅ Compute and print final R² score across all products
         if true_all and pred_all:
             overall_r2 = r2_score(true_all, pred_all)
             print(f"\n🔍 Final Overall R² Score across all products: {overall_r2:.4f}")
@@ -218,7 +199,6 @@ def predict_stock(request):
         request.session['prediction_type'] = prediction_type
         request.session.save()
 
-        # Redirect to avoid resubmission on page refresh
         return redirect('stock_prediction')
     
     # Retrieve predictions from session if available
@@ -358,35 +338,32 @@ def reports_analytics(request):
 
     refresh = request.GET.get("refresh") == "true"
 
-    # ✅ Check sales data cache
+    #  Check sales data cache
     cached_sales_data = request.session.get(sales_cache_key)
     sales_cache_expiry = request.session.get(sales_cache_expiry_key, 0)
 
     if not refresh and cached_sales_data and time.time() < sales_cache_expiry:
         sales_data = cached_sales_data
     else:
-        # 🚀 Fetch fresh sales data from Firestore
         sales_ref = db.collection("sales_data")  
         sales_docs = sales_ref.stream()
         sales_data = [doc.to_dict() for doc in sales_docs]
 
-        # ✅ Store data in session with an expiry time (e.g., 10 minutes)
+        #  Store data in session with an expiry time (e.g., 10 minutes)
         request.session[sales_cache_key] = sales_data
         request.session[sales_cache_expiry_key] = time.time() + (30 * 60)  # 10 minutes
 
-    # ✅ Check products data cache
+    # Check products data cache
     cached_products_data = request.session.get(products_cache_key)
     products_cache_expiry = request.session.get(products_cache_expiry_key, 0)
 
     if not refresh and cached_products_data and time.time() < products_cache_expiry:
         products_data = cached_products_data
     else:
-        # 🚀 Fetch fresh products data from Firestore
         products_ref = db.collection("products")  
         products_docs = products_ref.stream()
         products_data = [doc.to_dict() for doc in products_docs]
 
-        # ✅ Store data in session with an expiry time (e.g., 30 minutes)
         request.session[products_cache_key] = products_data
         request.session[products_cache_expiry_key] = time.time() + (30 * 60)  # 30 minutes
 
@@ -454,8 +431,7 @@ def reset_reports_cache(request):
     return redirect('reports_analytics')
 
 
-# SERVICE_ACCOUNT_FILE = 'homehub-b1065-firebase-adminsdk-fbsvc-57988d332f.json'
-# Load service account credentials from environment variable
+
 creds_json = os.getenv("GOOGLE_CREDENTIALS")
 creds_dict = json.loads(creds_json)
 SCOPES = ['https://www.googleapis.com/auth/firebase.messaging']
@@ -493,10 +469,10 @@ def send_firebase_notification(title, body):
 def upload_to_github(file):
     # Extract settings
     token = settings.GITHUB_TOKEN
-    repo = settings.GITHUB_REPO  # e.g., 'sugumar247/3d_models'
+    repo = settings.GITHUB_REPO
     branch = settings.GITHUB_BRANCH
     filename = file.name
-    upload_path = f'models/{filename}'  # GitHub Pages compatible path
+    upload_path = f'models/{filename}'
 
     # Read and encode file content
     file_content = file.read()
@@ -538,7 +514,7 @@ def add_new_products(request):
         price = request.POST.get('price', '0').strip()
         image_url = request.POST.get('image_url', '').strip()
         product_key = request.POST.get('product_key', '').strip()
-        model_file = request.FILES.get('model_file')  # Handle model file
+        model_file = request.FILES.get('model_file')
 
         # Input validation...
         try:
@@ -598,7 +574,7 @@ def add_new_products(request):
         # Add product to Firestore
         db.collection('products').add(product_data)
 
-        # 🔔 Send push notification
+        #  Send push notification
         send_firebase_notification(
             title='New Product Added!',
             body=f'{product_name} is now available. Check it out!'
@@ -724,3 +700,4 @@ def recent_updates(request):
     ]
 
     return JsonResponse({'success': True, 'recent_products': formatted_products})
+
