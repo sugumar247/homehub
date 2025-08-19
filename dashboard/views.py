@@ -224,7 +224,7 @@ def admin_login(request):
         password = request.POST.get('password')
 
         # Firebase Authentication using REST API for verifying email and password
-        firebase_api_key = 'AIzaSyCyniZoDHr2UdwZHi9c0FEecFpsMLGaSi8'
+        firebase_api_key = settings.FIREBASE_APIKEY
         firebase_auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
         
         payload = {
@@ -700,4 +700,5 @@ def recent_updates(request):
     ]
 
     return JsonResponse({'success': True, 'recent_products': formatted_products})
+
 
